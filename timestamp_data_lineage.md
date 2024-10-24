@@ -1,34 +1,42 @@
-# This is an example document to show the way timestamps could be implemented throughout the entirety of the Consent Gateway framework, from user preferences, to device storage, and server retrieval via the Camara API.
+# Consent Gateway Data Lineage 1.0
 
-# Part 1: Time Stamping from the CMP UI to the Device (Mobile is shown, but could easily be implemented for a non-mobile device)
+### This is an example document to show the way timestamps could be implemented throughout the entirety of the Consent Gateway framework, from user preferences, to device storage, and server retrieval via the Camara API.
 
-# 1. User interacts with CMP to generate their consent string:
+## Part 1: Time Stamping from the CMP UI to the Device (Mobile is shown, but could easily be implemented for a non-mobile device)
 
-# Example Javascript showing the user consent data capture along with a timestamp generated
+### 1. User interacts with CMP to generate their consent string:
+
+### Example Javascript showing the user consent data capture along with a timestamp generated
 
 // JavaScript (React/Vanilla) - Capturing user interactions
-const logEvent = (eventName, metadata = {}) => {
+
+<code>const logEvent = (eventName, metadata = {}) => {
+
+
   const timestamp = new Date().toISOString(); // Capture current timestamp
-  console.log(`[${timestamp}] Event: ${eventName}`, metadata);
+  console.log(`[${timestamp}] Event: ${eventName}`, metadata);</code>
 
-# Optional: Example - Send to a separate server to track/store data lineage
-
+### Optional: Example - Send to a separate server to track/store data lineage
+<code>
   fetch('/api/log', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ event: eventName, timestamp, metadata })
   });
 };
+</code>
 
-# Example generate and store Consent String to Device (not official TypeScript/JavaScript Code from repo's)
+### Example generate and store Consent String to Device (not official TypeScript/JavaScript Code from repo's)
 
+<code>
 const generateConsentString = (preferences) => {
   const consentString = btoa(JSON.stringify(preferences)); // Base64 encoding for storage
   const timestamp = new Date().toISOString();
   
   return { consentString, timestamp };
 };
-
+</code>
+<code>
 // Example: User selects preferences in CMP user interface, which generates consent string with timestamp
 const { consentString, timestamp } = generateConsentString({
   consentType1: true,
@@ -40,11 +48,11 @@ const { consentString, timestamp } = generateConsentString({
 });
 
 console.log(`[${timestamp}] Consent String Generated:`, consentString);
+</code>
+## 2. Consent string is stored to the user's mobile device:
 
-# 2. Consent string is stored to the user's mobile device:
-
-# Example kotlin code to store consent string to Android EncryptedSharedPreferences w/ Timestamp:
-
+### Example kotlin code to store consent string to Android EncryptedSharedPreferences w/ Timestamp:
+<code>
 val sharedPreferences = EncryptedSharedPreferences.create(
     "consent_prefs",
     MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
@@ -60,9 +68,10 @@ val timestamp = System.currentTimeMillis().toString()
 editor.putString("consent_string", consentString)
 editor.putString("timestamp", timestamp)
 editor.apply()
+</code>
 
-# Example swift code to store consent string to iOS Keychain w/ Timestamp:
-
+### Example swift code to store consent string to iOS Keychain w/ Timestamp:
+<code>
 val sharedPreferences = EncryptedSharedPreferences.create(
     "consent_prefs",
     MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC),
@@ -78,11 +87,13 @@ val timestamp = System.currentTimeMillis().toString()
 editor.putString("consent_string", consentString)
 editor.putString("timestamp", timestamp)
 editor.apply()
+</code>
 
-# Part 2 - Time stamps are also implemented for valid logging per every API call and to enforce the security matrix.
+## Part 2 - Time stamps are also implemented for valid logging per every API call and to enforce the security matrix.
 
-# 3. Backend - API Endpoint Example with Timestamps:
+## 3. Backend - API Endpoint Example with Timestamps:
 
+<code>
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
@@ -106,18 +117,21 @@ app.post('/api/consent/sync', (req, res) => {
 
   res.status(200).json({ status: 'Success', message: 'Consent synced.' });
 });
+</code>
 
-# Example of exposing associated server port
+### Example of exposing associated server port
 
+<code>
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+</code>
 
+## Part 3: Syncing will also need to take place in order to keep the consent states valid and concentric.
 
-# Part 3: Syncing will also need to take place in order to keep the consent states valid and concentric.
+### Example syncing Logic in kotlin for Android Consent State retrieval w/ Timestamps:
 
-# Example syncing Logic in kotlin for Android Consent State retrieval w/ Timestamps:
-
+<code>
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -172,8 +186,11 @@ fun syncConsentData(serverUrl: String) {
 // Example usage (for illustrative purposes):
 syncConsentData("http://localhost:3000/api/consent/sync")
 
-# Example syncing logic in Swift for iOS Consent State Retrieval w/ Time Stamps:
+</code>
 
+### Example syncing logic in Swift for iOS Consent State Retrieval w/ Time Stamps:
+
+<code>
 import Foundation
 
 func getConsentDataFromKeychain(account: String) -> String? {
@@ -237,17 +254,22 @@ func syncConsentData() {
 // Example usage (for illustrative purposes)
 syncConsentData()
 
-# Part 4: Logging is a critical portion of the overall framework, which should also necessarily include the proper time stamping for retrieval and storage:
+</code>
 
-# Data Lineage Sync Log in Server Console Example:
+## Part 4: Logging is a critical portion of the overall framework, which should also necessarily include the proper time stamping for retrieval and storage:
 
+### Data Lineage Sync Log in Server Console Example:
+
+<code>
 [2024-10-24T15:22:10Z] Consent Synced for Device: 1234-5678-ABCD
 Consent Log: { consentString: "eyJhZHMiOnRydWUsICJhbmFseXRpY3MiOmZhbHNlLCAicGVyc29uYWxpemF0aW9uIjp0cnVlfQ==", timestamp: "2024-10-24T15:21:05Z", deviceId: "1234-5678-ABCD" }
+</code>
 
-# Part 5: Example overview of data lineage with Timestamping:
+## Part 5: Example overview of data lineage with Timestamping:
 
-# 1. Consent State Creation and related device - Expiration is included but may need to be handled on api and server side for true time-bound validation & verification:
+### 1. Consent State Creation and related device - Expiration is included but may need to be handled on api and server side for true time-bound validation & verification:
 
+<code>
 {
   "consent_creation": {
     "user_id": 123,
@@ -256,9 +278,10 @@ Consent Log: { consentString: "eyJhZHMiOnRydWUsICJhbmFseXRpY3MiOmZhbHNlLCAicGVyc
     "consent_string": "abc123...",
     "platform": "iOS"
   },
+</code>
 
-# 2. Consent is retreived as part of security & scoping matrix (not necessarily for ad bidding):
-
+### 2. Consent is retreived as part of security & scoping matrix (not necessarily for ad bidding):
+<code>
   "consent_retrieval": {
     "retrieved_at": "2024-10-24T11:00:05Z",
     "retrieved_by": "browser_app"
@@ -272,8 +295,11 @@ Consent Log: { consentString: "eyJhZHMiOnRydWUsICJhbmFseXRpY3MiOmZhbHNlLCAicGVyc
   }
 }
 
-# 3. The server produces and stores the time-stamped logs per user or authenticator request:
+</code>
 
+### 3. The server produces and stores the time-stamped logs per user or authenticator request:
+
+<code>
 {
   "user_id": 123,
   "consent_string": "abc123...",
@@ -281,3 +307,5 @@ Consent Log: { consentString: "eyJhZHMiOnRydWUsICJhbmFseXRpY3MiOmZhbHNlLCAicGVyc
   "validity_checked_at": "2024-10-24T11:01:01Z",
   "result": "Access granted"
 }
+
+</code>
